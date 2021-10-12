@@ -9,7 +9,7 @@ class Game {
     String[][] grid = new String[rows][columns];
     boolean game_over = false;
     int turn = 0;
-    int difficulty = 0;
+    int difficulty;
 
     Game() {
 
@@ -498,7 +498,7 @@ class Game {
      * @return false or ture
      */
     private boolean terminal_test(String[][] arr, String piece) {
-        if (find_win(arr, piece) || find_tie(arr)) {
+        if (find_win(arr, piece)) {
             return true;
         }
         return false;
