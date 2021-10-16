@@ -42,12 +42,12 @@ class Game {
                 } else {
                     if (valid_insert(grid, selection)) {
                         System.out.println();
-                        System.out.println("Player 1 selected: " + selection);
+                        System.out.println("You selected: " + selection);
                         int row = avaiable_row(grid, selection);
                         drop(grid, row, selection, "x");
                         if (find_win(grid, "x")) {
                             System.out.println();
-                            System.out.println("Player 1 wins!");
+                            System.out.println("You win!");
                             game_over = true;
                         } else {
                             if (find_win(grid, "x") != true && find_tie(grid) == true) {
@@ -95,8 +95,6 @@ class Game {
                             game_over = true;
                         }
                     }
-
-
                 }
 
             }
@@ -110,41 +108,269 @@ class Game {
     }
 
     /**
-     * Checks if specified column is full
+     * Minimax implementation based of pseudocode taken from: https://en.wikipedia.org/wiki/Minimax
      *
-     * @param arr the grid
-     * @param col the column we want to check
-     * @return
+     * @param arr              the grid
+     * @param depth            the difficulty, the human player wishes to play at
+     * @param maximizingPlayer
+     * @return array containing the column to insert and value of the evaluation
      */
-    private boolean valid_insert(String[][] arr, int col) {
+    private int[] minimax(String[][] arr, int depth, boolean maximizingPlayer) {
+        int[] returns = new int[2];
+        int score;
+        String[][] temp;
+        float value;
+        int insert = 0;
 
-        if (arr[5][col] == null) {
-            return true;
-        } else {
-            return false;
+
+        if (depth == 0 || terminal_test(arr, "o")) {
+            if (terminal_test(arr, "o")) {
+                if (find_win(arr, "o")) {
+
+                    returns[1] = Integer.MAX_VALUE;
+                    ;
+                    return returns;
+                } else if (find_win(arr, "x")) {
+                    returns[1] = Integer.MIN_VALUE;
+                    ;
+                    return returns;
+                } else {                                //if there is a tie
+                    returns[1] = 0;
+                    return returns;
+                }
+            } else {
+                returns[1] = evaluation("o", "x", arr);
+                return returns;
+            }
         }
+
+        if (maximizingPlayer) {
+            value = Integer.MIN_VALUE;
+            ;
+            int[] validColumns = potential_moves(arr);
+            for (int col : validColumns) {
+                int row = avaiable_row(arr, col);
+                temp = copyOf(arr);           ////////might be an issue. Oh well, we will see!
+                drop(temp, row, col, "o");
+                score = minimax(temp, depth - 1, false)[1];
+                if (score > value) {
+                    value = score;
+                    insert = col;
+                }
+            }
+
+            returns[0] = insert;
+            returns[1] = (int) value;
+            return returns;
+
+
+        } else {
+            value = Integer.MAX_VALUE;
+            ;
+            int[] validColumns = potential_moves(arr);
+            for (int col : validColumns) {
+                int row = avaiable_row(arr, col);
+                temp = copyOf(arr);           ////////might be an issue. Oh well, we will see!
+                drop(temp, row, col, "X");
+                score = minimax(temp, depth - 1, true)[1];
+                if (score < value) {
+                    value = score;
+                    insert = col;
+                }
+
+            }
+
+
+        }
+
+        returns[0] = insert;
+        returns[1] = (int) value;
+        return returns;
+    }
+
+
+    /**
+     * checks for win or tie to determine if the game is finished
+     *
+     * @param arr   the grid
+     * @param piece the piece of the player
+     * @return false or ture
+     */
+    private boolean terminal_test(String[][] arr, String piece) {
+        if (find_win(arr, piece) || find_tie(arr)) {
+            return true;
+        }
+        return false;
     }
 
     /**
-     * Gets the next avaliable row in a specified column
+     * This evaluation function determines which player has the best chance of winning by calculating the difference of the total amount of possible wins: This evaluation function was taken from: https://stackoverflow.com/questions/10985000/how-should-i-design-a-good-evaluation-function-for-connect-4
      *
-     * @param arr the grid
-     * @param col the specified column
+     * @param symbol1 the maximizing player
+     * @param symbol2 the minimizing player
+     * @param arr     the grid we want to evaluate
      * @return
      */
-    private int avaiable_row(String[][] arr, int col) {
-        int r = 0;
-        int k = 0;
+    private int evaluation(String symbol1, String symbol2, String[][] arr) {
+        return (100) * (score(arr, symbol1) - score(arr, symbol2));
+    }
 
-        while (k < rows)
-            if (arr[k][col] == null) {
-                r = k;
-                break;
-            } else {
-                k = k + 1;
+
+    /**
+     * This method returns a score that represents the probability of a potential win by looking at all different possibilities and assigning them a score
+     *
+     * @param arr   the grid we want to evaluation
+     * @param piece the player we want to evaluate
+     * @return
+     */
+    private int score(String[][] arr, String piece) {
+        int total = 0;
+
+
+        //horizontal scoring
+        for (int i = 0; i < columns - 3; i++) {
+            for (int j = 0; j < rows; j++) {
+                if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
+                    total = total + Integer.MAX_VALUE;
+                    ;
+                } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
+                    total = total + 150;
+                } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == null) {
+                    total = total + 50;
+                } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
+                    total = total + 50;
+                } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
+                    total = total + 50;
+                } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
+                    total = total + 50;
+                } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == null) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == null) {
+                    total = total + 1;
+                }
             }
 
-        return r;
+        }
+
+        //vertical scoring
+        for (int i = 0; i < columns; i++) {
+            for (int j = 0; j < rows - 3; j++) {
+                if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
+                    total = total + Integer.MAX_VALUE;
+                } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
+                    total = total + 150;
+                } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == null) {
+                    total = total + 50;
+                } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
+                    total = total + 50;
+                } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
+                    total = total + 50;
+                } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
+                    total = total + 50;
+                } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == null) {
+                    total = total + 15;
+                } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
+                    total = total + 15;
+                } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
+                    total = total + 15;
+                } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == null) {
+                    total = total + 15;
+                }
+
+
+            }
+
+        }
+
+        //positive diagonal scoring
+        for (int i = 0; i < columns - 3; i++) {
+            for (int j = 0; j < rows - 3; j++) {
+                if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
+                    total = total + Integer.MAX_VALUE;
+                    ;
+                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
+                    total = total + 150;
+                } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
+                    total = total + 50;
+                } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
+                    total = total + 50;
+                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
+                    total = total + 50;
+                } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
+                    total = total + 50;
+                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
+                    total = total + 1;
+                }
+            }
+
+        }
+
+        //negative diagonal scoring
+        for (int i = 0; i < columns - 3; i++) {
+            for (int j = 3; j < rows; j++) {
+                if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
+                    total = total + Integer.MAX_VALUE;
+                    ;
+                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
+                    total = total + 150;
+                } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
+                    total = total + 150;
+                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
+                    total = total + 50;
+                } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
+                    total = total + 50;
+                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
+                    total = total + 50;
+                } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
+                    total = total + 50;
+                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
+                    total = total + 1;
+                } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
+                    total = total + 1;
+                }
+            }
+
+        }
+
+
+        return total;
+
     }
 
     private void drop(String[][] arr, int row, int col, String piece) {
@@ -205,6 +431,44 @@ class Game {
         return temp;
     }
 
+    /**
+     * Checks if specified column is full
+     *
+     * @param arr the grid
+     * @param col the column we want to check
+     * @return
+     */
+    private boolean valid_insert(String[][] arr, int col) {
+
+        if (arr[5][col] == null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Gets the next avaliable row in a specified column
+     *
+     * @param arr the grid
+     * @param col the specified column
+     * @return
+     */
+    private int avaiable_row(String[][] arr, int col) {
+        int r = 0;
+        int k = 0;
+
+        while (k < rows)
+            if (arr[k][col] == null) {
+                r = k;
+                break;
+            } else {
+                k = k + 1;
+            }
+
+        return r;
+    }
+
 
     /**
      * Determines if the game is a tie
@@ -214,7 +478,6 @@ class Game {
     private boolean find_tie(String[][] arr) {
 
         int total = 0;
-        int slots = 42;
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
@@ -288,174 +551,6 @@ class Game {
 
 
     /**
-     * This method returns a score that represents the probability of a potential win by looking at all different possibilities and assigning them a score
-     *
-     * @param arr   the grid we want to evaluation
-     * @param piece the player we want to evaluate
-     * @return
-     */
-    private int score(String[][] arr, String piece) {
-        int total = 0;
-
-
-        //horizontal scoring
-        for (int i = 0; i < columns - 3; i++) {
-            for (int j = 0; j < rows; j++) {
-                if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
-                    total = total + (int) Float.POSITIVE_INFINITY;
-                } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
-                    total = total + 150;
-                } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == null) {
-                    total = total + 50;
-                } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
-                    total = total + 50;
-                } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
-                    total = total + 50;
-                } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
-                    total = total + 50;
-                } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == null) {
-                    total = total + 1;
-                } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
-                    total = total + 1;
-                } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
-                    total = total + 1;
-                } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == null) {
-                    total = total + 1;
-                }
-            }
-
-        }
-
-        //vertical scoring
-        for (int i = 0; i < columns; i++) {
-            for (int j = 0; j < rows - 3; j++) {
-                if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
-                    total = total + (int) Float.POSITIVE_INFINITY;
-                } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
-                    total = total + 150;
-                } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == null) {
-                    total = total + 50;
-                } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
-                    total = total + 50;
-                } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
-                    total = total + 50;
-                } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
-                    total = total + 50;
-                } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == null) {
-                    total = total + 15;
-                } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
-                    total = total + 15;
-                } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
-                    total = total + 15;
-                } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == null) {
-                    total = total + 15;
-                }
-
-
-            }
-
-        }
-
-        //positive diagonal scoring
-        for (int i = 0; i < columns - 3; i++) {
-            for (int j = 0; j < rows - 3; j++) {
-                if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
-                    total = total + (int)Float.POSITIVE_INFINITY;
-                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
-                    total = total + 150;
-                } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
-                    total = total + 50;
-                } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
-                    total = total + 50;
-                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
-                    total = total + 50;
-                } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
-                    total = total + 50;
-                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
-                    total = total + 1;
-                } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
-                    total = total + 1;
-                } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
-                    total = total + 1;
-                } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
-                    total = total + 1;
-                }
-            }
-
-        }
-
-        //negative diagonal scoring
-        for (int i = 0; i < columns - 3; i++) {
-            for (int j = 3; j < rows; j++) {
-                if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
-                    total = total + (int)Float.POSITIVE_INFINITY;
-                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
-                    total = total + 150;
-                } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
-                    total = total + 150;
-                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
-                    total = total + 50;
-                } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
-                    total = total + 50;
-                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
-                    total = total + 50;
-                } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
-                    total = total + 50;
-                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
-                    total = total + 1;
-                } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
-                    total = total + 1;
-                } else if (arr[j][i] ==null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
-                    total = total + 1;
-                } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
-                    total = total + 1;
-                }
-            }
-
-        }
-
-
-        return total;
-
-    }
-
-
-    /**
-     * This evaluation function determines which player has the best chance of winning by calculating the difference of the total amount of possible wins: This evaluation function was taken from: https://stackoverflow.com/questions/10985000/how-should-i-design-a-good-evaluation-function-for-connect-4
-     *
-     * @param symbol1 the maximizing player
-     * @param symbol2 the minimizing player
-     * @param arr     the grid we want to evaluate
-     * @return
-     */
-    private int evaluation(String symbol1, String symbol2, String[][] arr) {
-        return (100) * (score(arr, symbol1) - score(arr, symbol2));
-    }
-
-
-    /**
      * returns a copy of a specified array
      *
      * @param arr the array we want ot copy
@@ -488,96 +583,6 @@ class Game {
             }
         }
         return cols;
-    }
-
-    /**
-     * checks for win or tie to determine if the game is finished
-     *
-     * @param arr   the grid
-     * @param piece the piece of the player
-     * @return false or ture
-     */
-    private boolean terminal_test(String[][] arr, String piece) {
-        if (find_win(arr, piece)) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Minimax implementation based of pseudocode taken from: https://en.wikipedia.org/wiki/Minimax
-     *
-     * @param arr              the grid
-     * @param depth            the difficulty, the human player wishes to play at
-     * @param maximizingPlayer
-     * @return array containing the column to insert and value of the evaluation
-     */
-    private int[] minimax(String[][] arr, int depth, boolean maximizingPlayer) {
-        int[] returns = new int[2];
-        int score;
-        String[][] temp;
-        float value;
-        int insert = 0;
-
-
-        if (depth == 0 || terminal_test(arr, "o")) {
-            if (terminal_test(arr, "o")) {
-                if (find_win(arr, "o")) {
-
-                    returns[1] = 1000000000;
-                    return returns;
-                } else if (find_win(arr, "x")) {
-                    returns[1] = -1000000000;
-                    return returns;
-                } else {                                //if there is a tie
-                    returns[1] = 0;
-                    return returns;
-                }
-            } else {
-                returns[1] = evaluation( "o","x",arr);
-                return returns;
-            }
-        }
-
-        if (maximizingPlayer) {
-            value = Float.NEGATIVE_INFINITY;
-            int[] validColumns = potential_moves(arr);
-            for (int col : validColumns) {
-                int row = avaiable_row(arr, col);
-                temp = copyOf(arr);           ////////might be an issue. Oh well, we will see!
-                drop(temp, row, col, "o");
-                score = minimax(temp, depth - 1, false)[1];
-                if (score > value) {
-                    value = score;
-                    insert = col;
-                }
-            }
-
-            returns[0] = insert;
-            returns[1] = (int)value;
-            return returns;
-
-
-        } else {
-            value = Float.POSITIVE_INFINITY;
-            int[] validColumns = potential_moves(arr);
-            for (int col : validColumns) {
-                int row = avaiable_row(arr, col);
-                temp = copyOf(arr);           ////////might be an issue. Oh well, we will see!
-                drop(temp, row, col, "X");
-                score = minimax(temp, depth - 1, true)[1];
-                if (score < value) {
-                    value = score;
-                    insert = col;
-                }
-
-            }
-
-            returns[0] = insert;
-            returns[1] = (int) value;
-            return returns;
-
-        }
     }
 
 
