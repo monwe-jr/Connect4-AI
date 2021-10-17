@@ -1,5 +1,3 @@
-import java.util.Arrays;
-import java.util.Random;
 import java.util.Scanner;
 
 
@@ -14,7 +12,7 @@ class Game {
     Game() {
 
         Scanner scan = new Scanner(System.in);
-        System.out.print("pick a difficulty in the range of 1-3: ");
+        System.out.print("pick a difficulty in the range of 1-3: "); // this will be the depth of the minimax algorithm. You can choose a depth greater than 3 but the program will run slower
         difficulty = scan.nextInt();
         if (difficulty == 1) {
             System.out.println("You picked difficulty: Easy");
@@ -141,6 +139,8 @@ class Game {
             } else {
                 returns[1] = evaluation("o", "x", arr);
                 return returns;
+
+
             }
         }
 
@@ -155,9 +155,18 @@ class Game {
                 score = minimax(temp, depth - 1, false)[1];
                 if (score > value) {
                     value = score;
-                    insert = col;
+
+                    if (find_block(arr, "x") == 7 || difficulty == 1) {
+                        insert = col;
+                    } else {
+                        if (difficulty > 1) {
+                            insert = find_block(arr, "x");
+                        }
+                    }
+
                 }
             }
+
 
             returns[0] = insert;
             returns[1] = (int) value;
@@ -175,7 +184,15 @@ class Game {
                 score = minimax(temp, depth - 1, true)[1];
                 if (score < value) {
                     value = score;
-                    insert = col;
+
+                    if (find_block(arr, "x") == 7 || difficulty == 1) {
+                        insert = col;
+                    } else {
+                        if (difficulty > 1) {
+                            insert = find_block(arr, "x");
+                        }
+                    }
+
                 }
 
             }
@@ -212,9 +229,87 @@ class Game {
      * @return
      */
     private int evaluation(String symbol1, String symbol2, String[][] arr) {
-        return (100) * (score(arr, symbol1) - score(arr, symbol2));
+        return (score(arr, symbol1) - score(arr, symbol2));
     }
 
+    /**
+     * This method finds a guaranteed win for the human player and blocks it. This method is only used when the difficulty is > than 1
+     *
+     * @param arr   the board
+     * @param piece the minimizing player
+     * @return
+     */
+    private int find_block(String[][] arr, String piece) {
+
+        //horizontal scoring
+        for (int i = 0; i < columns - 3; i++) {
+            for (int j = 0; j < rows; j++) {
+                if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
+                    return i + 3;
+
+                } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
+                    return i;
+                } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
+                    return i + 1;
+                } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
+                    return i + 2;
+                }
+            }
+        }
+
+
+        //vertical scoring
+        for (int i = 0; i < columns; i++) {
+            for (int j = 0; j < rows - 3; j++) {
+
+                if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
+                    return i;
+                } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
+                    return i;
+                } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
+                    return i;
+                } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
+                    return i;
+                }
+
+            }
+        }
+
+        //positive diagonal scoring
+        for (int i = 0; i < columns - 3; i++) {
+            for (int j = 0; j < rows - 3; j++) {
+                if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
+                    return i + 3;
+                } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
+                    return i;
+                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
+                    return i + 1;
+                } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
+                    return i + 2;
+                }
+
+            }
+        }
+
+        //negative diagonal scoring
+        for (int i = 0; i < columns - 3; i++) {
+            for (int j = 3; j < rows; j++) {
+                if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
+                    return i + 3;
+                } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
+                    return i;
+                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
+                    return i + 1;
+                } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
+                    return i + 2;
+
+                }
+
+            }
+        }
+
+        return 7; // 7 is not a column in connect 4 so it can be used as a key.
+    }
 
     /**
      * This method returns a score that represents the probability of a potential win by looking at all different possibilities and assigning them a score
@@ -234,29 +329,30 @@ class Game {
                     total = total + Integer.MAX_VALUE;
                     ;
                 } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
-                    total = total + 150;
+                    total = total + 1500;
+
                 } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == null) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == piece) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == piece && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == null && arr[j][i + 3] == piece) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j][i + 1] == null && arr[j][i + 2] == piece && arr[j][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j][i + 1] == piece && arr[j][i + 2] == null && arr[j][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 }
             }
 
@@ -268,29 +364,29 @@ class Game {
                 if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
                     total = total + Integer.MAX_VALUE;
                 } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == null) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == piece) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == piece && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == null) {
-                    total = total + 15;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == null && arr[j + 3][i] == piece) {
-                    total = total + 15;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j + 1][i] == null && arr[j + 2][i] == piece && arr[j + 3][i] == null) {
-                    total = total + 15;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j + 1][i] == piece && arr[j + 2][i] == null && arr[j + 3][i] == null) {
-                    total = total + 15;
+                    total = total + 10;
                 }
 
 
@@ -305,29 +401,29 @@ class Game {
                     total = total + Integer.MAX_VALUE;
                     ;
                 } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == piece) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == piece && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == piece) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j + 1][i + 1] == piece && arr[j + 2][i + 2] == null && arr[j + 3][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j + 1][i + 1] == null && arr[j + 2][i + 2] == piece && arr[j + 3][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 }
             }
 
@@ -340,29 +436,29 @@ class Game {
                     total = total + Integer.MAX_VALUE;
                     ;
                 } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
-                    total = total + 150;
+                    total = total + 1500;
                 } else if (arr[j][i] == piece && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == piece) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
-                    total = total + 50;
+                    total = total + 500;
                 } else if (arr[j][i] == piece && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == piece) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j - 1][i + 1] == piece && arr[j - 2][i + 2] == null && arr[j - 3][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 } else if (arr[j][i] == null && arr[j - 1][i + 1] == null && arr[j - 2][i + 2] == piece && arr[j - 3][i + 3] == null) {
-                    total = total + 1;
+                    total = total + 10;
                 }
             }
 
